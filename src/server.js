@@ -401,15 +401,75 @@ async function main() {
     terminal: false
   });
 
-  console.error("MCP Ethical Hacking server iniciado");
+  // Banner de inicio
+  console.error(`
+╔════════════════════════════════════════════════════════════════╗
+║       🔒 MCP ETHICAL HACKING SERVER - INICIADO                ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 Información del Servidor:
+   • Protocolo: JSON-RPC 2.0
+   • Entrada: stdin
+   • Salida: stdout
+   • Status: ✓ Escuchando
+
+🛠️  Herramientas Disponibles (7):
+   1. run_command           - Ejecutar comandos shell
+   2. search_command        - Buscar comandos y herramientas
+   3. install_package       - Instalar paquetes (apt-get)
+   4. launch_gui_tool       - Lanzar aplicaciones GUI
+   5. check_gui_tool        - Verificar herramientas disponibles
+   6. notion_create_page    - Crear páginas en Notion
+   7. notion_query_database - Consultar bases de datos Notion
+
+📡 Integración HTTP Bridge:
+   • URL: http://localhost:3000
+   • Command: npm run http
+
+🔌 Conexión: ${process.env.NOTION_API_KEY ? '✓ Notion conectado' : '⚠️  Notion no configurado (opcional)'}
+
+════════════════════════════════════════════════════════════════
+  Servidor listo. Esperando solicitudes JSON-RPC...
+════════════════════════════════════════════════════════════════
+`);
+
+  let requestCount = 0;
 
   for await (const line of rl) {
     try {
+      requestCount++;
       const request = JSON.parse(line);
+      
+      // Log de request entrante
+      const methodName = request.method || 'unknown';
+      console.error(`\n[REQUEST #${requestCount}] ${new Date().toISOString()}`);
+      console.error(`  Method: ${methodName}`);
+      if (request.params) {
+        console.error(`  Params: ${JSON.stringify(request.params).substring(0, 100)}${JSON.stringify(request.params).length > 100 ? '...' : ''}`);
+      }
+
       const response = await processRequest(request);
+      
+      // Log de response
+      if (response.result) {
+        console.error(`  ✓ Exitoso`);
+        if (typeof response.result === 'string' && response.result.length > 100) {
+          console.error(`  Output: ${response.result.substring(0, 100)}...`);
+        } else if (typeof response.result === 'object') {
+          console.error(`  Output: ${JSON.stringify(response.result).substring(0, 100)}...`);
+        }
+      } else if (response.error) {
+        console.error(`  ✗ Error: ${response.error.message}`);
+      }
+
       console.log(JSON.stringify(response));
     } catch (error) {
-      console.error("Error procesando solicitud:", error);
+      console.error(`\n[ERROR] ${error.message}`);
+      console.log(JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32603, message: error.message }
+      }));
     }
   }
 }

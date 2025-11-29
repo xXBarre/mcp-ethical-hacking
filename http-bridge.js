@@ -191,15 +191,19 @@ function createHTTPServer() {
             params: data.params || {}
           };
 
-          console.log(`[HTTP] Petición: ${jsonrpc.method}`);
+          console.log(`\n[HTTP REQUEST] ${new Date().toISOString()}`);
+          console.log(`  Method: ${jsonrpc.method}`);
+          console.log(`  Params: ${JSON.stringify(jsonrpc.params).substring(0, 100)}${JSON.stringify(jsonrpc.params).length > 100 ? '...' : ''}`);
           
           // Enviar al MCP
           const result = await sendToMCP(jsonrpc);
           
+          console.log(`  ✓ Exitoso - Response enviada`);
+          
           res.writeHead(200);
           res.end(JSON.stringify(result, null, 2));
         } catch (error) {
-          console.error('[HTTP] Error:', error.message);
+          console.error(`  ✗ Error: ${error.message}`);
           res.writeHead(400);
           res.end(JSON.stringify({
             error: error.message,
@@ -240,19 +244,28 @@ async function main() {
     const server = createHTTPServer();
     
     server.listen(PORT, () => {
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`✓ MCP HTTP Bridge iniciado en: http://localhost:${PORT}`);
-      console.log(`${'='.repeat(60)}\n`);
-      console.log('Endpoints disponibles:');
-      console.log(`  GET  http://localhost:${PORT}/              - Info`);
-      console.log(`  GET  http://localhost:${PORT}/health        - Estado`);
-      console.log(`  GET  http://localhost:${PORT}/tools         - Herramientas`);
-      console.log(`  POST http://localhost:${PORT}/call          - Ejecutar comando\n`);
-      console.log('Ejemplo de uso con curl:');
-      console.log(`  curl -X POST http://localhost:${PORT}/call \\`);
-      console.log(`    -H "Content-Type: application/json" \\`);
-      console.log(`    -d '{"method":"run_command","params":{"command":"echo \\"hola\\""}}'\n`);
-      console.log(`${'='.repeat(60)}\n`);
+      console.log(`\n${'='.repeat(65)}`);
+      console.log(`╔${'═'.repeat(63)}╗`);
+      console.log(`║ 🌐 MCP HTTP BRIDGE - INICIADO CORRECTAMENTE              ║`);
+      console.log(`╚${'═'.repeat(63)}╝`);
+      console.log(`\n📡 Servidor HTTP activo en: http://localhost:${PORT}`);
+      console.log(`\n📍 Endpoints disponibles:\n`);
+      console.log(`   GET  http://localhost:${PORT}/              Info del servidor`);
+      console.log(`   GET  http://localhost:${PORT}/health        Estado del servidor`);
+      console.log(`   GET  http://localhost:${PORT}/tools         Listar herramientas\n`);
+      console.log(`   POST http://localhost:${PORT}/call          Ejecutar herramienta`);
+      console.log(`   POST http://localhost:${PORT}/execute       Alias para /call\n`);
+      console.log(`📚 Ejemplos de uso:\n`);
+      console.log(`   # Verificar estado`);
+      console.log(`   curl http://localhost:${PORT}/health\n`);
+      console.log(`   # Ejecutar comando`);
+      console.log(`   curl -X POST http://localhost:${PORT}/call \\`);
+      console.log(`     -H "Content-Type: application/json" \\`);
+      console.log(`     -d '{"method":"run_command","params":{"command":"echo hola"}}'\n`);
+      console.log(`${'='.repeat(65)}`);
+      console.log(`✓ Escuchando en puerto ${PORT}...`);
+      console.log(`✓ MCP Server conectado`);
+      console.log(`${'='.repeat(65)}\n`);
     });
 
     // Manejo de señales
