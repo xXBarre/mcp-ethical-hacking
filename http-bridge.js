@@ -198,12 +198,12 @@ function createHTTPServer() {
           // Enviar al MCP
           const result = await sendToMCP(jsonrpc);
           
-          console.log(`  ✓ Exitoso - Response enviada`);
+          console.log(`  EXITOSO - Response enviada`);
           
           res.writeHead(200);
           res.end(JSON.stringify(result, null, 2));
         } catch (error) {
-          console.error(`  ✗ Error: ${error.message}`);
+          console.error(`  ERROR: ${error.message}`);
           res.writeHead(400);
           res.end(JSON.stringify({
             error: error.message,
@@ -246,16 +246,16 @@ async function main() {
     server.listen(PORT, () => {
       console.log(`\n${'='.repeat(65)}`);
       console.log(`╔${'═'.repeat(63)}╗`);
-      console.log(`║ 🌐 MCP HTTP BRIDGE - INICIADO CORRECTAMENTE              ║`);
+      console.log(`║ MCP HTTP BRIDGE - INICIADO CORRECTAMENTE                 ║`);
       console.log(`╚${'═'.repeat(63)}╝`);
-      console.log(`\n📡 Servidor HTTP activo en: http://localhost:${PORT}`);
-      console.log(`\n📍 Endpoints disponibles:\n`);
+      console.log(`\nServidor HTTP activo en: http://localhost:${PORT}`);
+      console.log(`\nEndpoints disponibles:\n`);
       console.log(`   GET  http://localhost:${PORT}/              Info del servidor`);
       console.log(`   GET  http://localhost:${PORT}/health        Estado del servidor`);
       console.log(`   GET  http://localhost:${PORT}/tools         Listar herramientas\n`);
       console.log(`   POST http://localhost:${PORT}/call          Ejecutar herramienta`);
       console.log(`   POST http://localhost:${PORT}/execute       Alias para /call\n`);
-      console.log(`📚 Ejemplos de uso:\n`);
+      console.log(`Ejemplos de uso:\n`);
       console.log(`   # Verificar estado`);
       console.log(`   curl http://localhost:${PORT}/health\n`);
       console.log(`   # Ejecutar comando`);
@@ -263,8 +263,8 @@ async function main() {
       console.log(`     -H "Content-Type: application/json" \\`);
       console.log(`     -d '{"method":"run_command","params":{"command":"echo hola"}}'\n`);
       console.log(`${'='.repeat(65)}`);
-      console.log(`✓ Escuchando en puerto ${PORT}...`);
-      console.log(`✓ MCP Server conectado`);
+      console.log(`ESCUCHANDO en puerto ${PORT}...`);
+      console.log(`MCP Server conectado`);
       console.log(`${'='.repeat(65)}\n`);
     });
 

@@ -404,16 +404,16 @@ async function main() {
   // Banner de inicio
   console.error(`
 ╔════════════════════════════════════════════════════════════════╗
-║       🔒 MCP ETHICAL HACKING SERVER - INICIADO                ║
+║       MCP ETHICAL HACKING SERVER - INICIADO                   ║
 ╚════════════════════════════════════════════════════════════════╝
 
-📋 Información del Servidor:
+Información del Servidor:
    • Protocolo: JSON-RPC 2.0
    • Entrada: stdin
    • Salida: stdout
-   • Status: ✓ Escuchando
+   • Status: ESCUCHANDO
 
-🛠️  Herramientas Disponibles (7):
+Herramientas Disponibles (7):
    1. run_command           - Ejecutar comandos shell
    2. search_command        - Buscar comandos y herramientas
    3. install_package       - Instalar paquetes (apt-get)
@@ -422,11 +422,11 @@ async function main() {
    6. notion_create_page    - Crear páginas en Notion
    7. notion_query_database - Consultar bases de datos Notion
 
-📡 Integración HTTP Bridge:
+Integración HTTP Bridge:
    • URL: http://localhost:3000
    • Command: npm run http
 
-🔌 Conexión: ${process.env.NOTION_API_KEY ? '✓ Notion conectado' : '⚠️  Notion no configurado (opcional)'}
+Conexión: ${process.env.NOTION_API_KEY ? 'NOTION CONECTADO' : 'NOTION NO CONFIGURADO (opcional)'}
 
 ════════════════════════════════════════════════════════════════
   Servidor listo. Esperando solicitudes JSON-RPC...
@@ -452,14 +452,14 @@ async function main() {
       
       // Log de response
       if (response.result) {
-        console.error(`  ✓ Exitoso`);
+        console.error(`  EXITOSO`);
         if (typeof response.result === 'string' && response.result.length > 100) {
           console.error(`  Output: ${response.result.substring(0, 100)}...`);
         } else if (typeof response.result === 'object') {
           console.error(`  Output: ${JSON.stringify(response.result).substring(0, 100)}...`);
         }
       } else if (response.error) {
-        console.error(`  ✗ Error: ${response.error.message}`);
+        console.error(`  ERROR: ${response.error.message}`);
       }
 
       console.log(JSON.stringify(response));
