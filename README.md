@@ -55,27 +55,27 @@ El servidor implementa el protocolo JSON-RPC sobre stdin/stdout, lo que permite 
 ### 1. Reconocimiento de Red
 Ejecutar escaneos nmap, enumerar servicios, identificar vulnerabilidades conocidas y documentar hallazgos automáticamente en Notion.
 
-**Documentación**: [Reconocimiento de Red](Examples#caso-1-reconocimiento-de-red)
+**Documentación**: [Reconocimiento de Red](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples#caso-1-reconocimiento-de-red)
 
 ### 2. Testing de Aplicaciones Web
 Analizar aplicaciones web, lanzar Burp Suite para análisis profundo, identificar XSS, SQL Injection, CSRF y otros vulnerabilidades.
 
-**Documentación**: [Testing Web](Examples#caso-2-testing-web)
+**Documentación**: [Testing Web](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples#caso-2-testing-web)
 
 ### 3. Análisis de Malware
 Analizar binarios sospechosos, extraer strings, usar Ghidra para análisis estático y identificar comportamientos maliciosos.
 
-**Documentación**: [Análisis Binario](Examples#caso-3-análisis-binario)
+**Documentación**: [Análisis Binario](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples#caso-3-análisis-binario)
 
 ### 4. Investigación Forense
 Analizar volcados de memoria con Volatility, investigar procesos sospechosos y recopilar evidencia.
 
-**Documentación**: [Auditoría Forense](Examples#caso-4-auditoría-forense)
+**Documentación**: [Auditoría Forense](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples#caso-4-auditoría-forense)
 
 ### 5. Automatización de Auditorías
 Orquestar pipelines completos de auditoría con múltiples pasos, agregación de resultados y reportes automáticos.
 
-**Documentación**: [Pipeline Automático](Examples#caso-5-pipeline-automático)
+**Documentación**: [Pipeline Automático](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples#caso-5-pipeline-automático)
 
 ## Comenzar Rápidamente
 
@@ -96,41 +96,39 @@ export NOTION_API_KEY="tu-clave-aqui"
 npm start
 ```
 
-**Documentación completa**: [Guía de Instalación](Installation)
+**Documentación completa**: [Guía de Instalación](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Installation)
 
 ### Primeros Pasos
 
-1. **Para entender el proyecto**: [Inicio](Home)
-2. **Para instalar localmente**: [Instalación](Installation)
-3. **Para ver todas las herramientas**: [Herramientas](Tools)
-4. **Para integrar con tu LLM**: [Integraciones](LLM-Integration)
-5. **Para ver ejemplos reales**: [Ejemplos](Examples)
+1. **Para entender el proyecto**: [Inicio](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Home)
+2. **Para instalar localmente**: [Instalación](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Installation)
+3. **Para ver todas las herramientas**: [Herramientas](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Tools)
+4. **Para integrar con tu LLM**: [Integraciones](https://github.com/xXBarre/mcp-ethical-hacking/wiki/LLM-Integration)
+5. **Para ver ejemplos reales**: [Ejemplos](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples)
 
 ## Documentación Completa
 
 ### Guías de Referencia
 
-- **[Home](Home)** - Introducción y descripción del proyecto
-- **[Installation](Installation)** - Guía paso a paso de instalación
-- **[Tools](Tools)** - Documentación completa de las 7 herramientas con ejemplos JSON-RPC
-- **[Architecture](Architecture)** - Diseño técnico, flujos y componentes internos
+- **[Home](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Home)** - Introducción y descripción del proyecto
+- **[Installation](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Installation)** - Guía paso a paso de instalación
+- **[Tools](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Tools)** - Documentación completa de las 7 herramientas con ejemplos JSON-RPC
+- **[Architecture](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Architecture)** - Diseño técnico, flujos y componentes internos
 
 ### Integración y Despliegue
 
-- **[LLM-Integration](LLM-Integration)** - Cómo integrar con Claude Desktop, VS Code, Ollama, CLI y HTTP
-- **[Deployment](Deployment)** - Despliegue en Local, Docker, Kubernetes, AWS Lambda, Google Cloud Run
+- **[LLM-Integration](https://github.com/xXBarre/mcp-ethical-hacking/wiki/LLM-Integration)** - Cómo integrar con Claude Desktop, VS Code, Ollama, CLI y HTTP
+- **[Deployment](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Deployment)** - Despliegue en Local, Docker, Kubernetes, AWS Lambda, Google Cloud Run
 
 ### Aprendizaje y Soporte
 
-- **[Examples](Examples)** - 5 casos de uso reales con workflows completos
-- **[Security](Security)** - Guía de hardening y mejores prácticas de seguridad
-- **[FAQ](FAQ)** - Preguntas frecuentes y solución de problemas
-- **[Architecture](Architecture)** - Detalles técnicos de la implementación
+- **[Examples](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Examples)** - 5 casos de uso reales con workflows completos
+- **[Security](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Security)** - Guía de hardening y mejores prácticas de seguridad
+- **[FAQ](https://github.com/xXBarre/mcp-ethical-hacking/wiki/FAQ)** - Preguntas frecuentes y solución de problemas
 
 ### Referencias
 
-- **[Wiki-Index](Wiki-Index)** - Índice completo con todos los enlaces
-- **[_Sidebar](_Sidebar)** - Navegación estructurada del wiki
+- **[Wiki-Index](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Wiki-Index)** - Índice completo con todos los enlaces
 
 ## Arquitectura Técnica
 
