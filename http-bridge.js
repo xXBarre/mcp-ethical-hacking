@@ -15,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';  // Escucha en todas las interfaces
 const MCP_SERVER_PATH = path.join(__dirname, 'src', 'server.js');
 
 // Estado global
@@ -243,27 +244,43 @@ async function main() {
     // Crear y iniciar servidor HTTP
     const server = createHTTPServer();
     
-    server.listen(PORT, () => {
+    server.listen(PORT, HOST, () => {
+      // Obtener IPs locales
+      const os = require('os');
+      const interfaces = os.networkInterfaces();
+      let ips = ['127.0.0.1'];
+      
+      Object.keys(interfaces).forEach(iface => {
+        interfaces[iface].forEach(addr => {
+          if (addr.family === 'IPv4' && !addr.internal) {
+            ips.push(addr.address);
+          }
+        });
+      });
+      
       console.log(`\n${'='.repeat(65)}`);
       console.log(`╔${'═'.repeat(63)}╗`);
       console.log(`║ MCP HTTP BRIDGE - INICIADO CORRECTAMENTE                 ║`);
       console.log(`╚${'═'.repeat(63)}╝`);
-      console.log(`\nServidor HTTP activo en: http://localhost:${PORT}`);
+      console.log(`\nServidores HTTP disponibles:\n`);
+      ips.forEach(ip => {
+        console.log(`   http://${ip}:${PORT}`);
+      });
       console.log(`\nEndpoints disponibles:\n`);
-      console.log(`   GET  http://localhost:${PORT}/              Info del servidor`);
-      console.log(`   GET  http://localhost:${PORT}/health        Estado del servidor`);
-      console.log(`   GET  http://localhost:${PORT}/tools         Listar herramientas\n`);
-      console.log(`   POST http://localhost:${PORT}/call          Ejecutar herramienta`);
-      console.log(`   POST http://localhost:${PORT}/execute       Alias para /call\n`);
+      console.log(`   GET  /                Info del servidor`);
+      console.log(`   GET  /health          Estado del servidor`);
+      console.log(`   GET  /tools           Listar herramientas\n`);
+      console.log(`   POST /call            Ejecutar herramienta`);
+      console.log(`   POST /execute         Alias para /call\n`);
       console.log(`Ejemplos de uso:\n`);
       console.log(`   # Verificar estado`);
       console.log(`   curl http://localhost:${PORT}/health\n`);
-      console.log(`   # Ejecutar comando`);
-      console.log(`   curl -X POST http://localhost:${PORT}/call \\`);
+      console.log(`   # Ejecutar comando desde otra máquina`);
+      console.log(`   curl -X POST http://${ips[ips.length - 1]}:${PORT}/call \\`);
       console.log(`     -H "Content-Type: application/json" \\`);
-      console.log(`     -d '{"method":"run_command","params":{"command":"echo hola"}}'\n`);
+      console.log(`     -d '{"method":"run_command","params":{"command":"whoami"}}'\n`);
       console.log(`${'='.repeat(65)}`);
-      console.log(`ESCUCHANDO en puerto ${PORT}...`);
+      console.log(`ESCUCHANDO en ${HOST}:${PORT}...`);
       console.log(`MCP Server conectado`);
       console.log(`${'='.repeat(65)}\n`);
     });
