@@ -92,11 +92,38 @@ npm install
 # Configurar API Key de Notion (opcional)
 export NOTION_API_KEY="tu-clave-aqui"
 
-# Iniciar servidor
+# Iniciar servidor MCP
 npm start
+
+# En otra terminal: Iniciar HTTP bridge (para acceso vía REST API)
+npm run http
 ```
 
 **Documentación completa**: [Guía de Instalación](https://github.com/xXBarre/mcp-ethical-hacking/wiki/Installation)
+
+### Uso del HTTP Bridge
+
+Una vez iniciado `npm run http`, el servidor estará disponible en `http://localhost:3000`:
+
+```bash
+# Ver estado
+curl http://localhost:3000/health
+
+# Listar herramientas disponibles
+curl http://localhost:3000/tools
+
+# Ejecutar comando
+curl -X POST http://localhost:3000/call \
+  -H "Content-Type: application/json" \
+  -d '{"method":"run_command","params":{"command":"echo hola"}}'
+```
+
+Endpoints disponibles:
+- `GET /` - Información del servidor
+- `GET /health` - Estado del MCP
+- `GET /tools` - Lista de herramientas
+- `POST /call` - Ejecutar herramienta (JSON-RPC)
+- `POST /execute` - Alias para `/call`
 
 ### Primeros Pasos
 
