@@ -22,7 +22,7 @@ npm --version    # Debe ser 8.0.0 o superior
 ## Paso 1: Clonar el Repositorio
 
 ```bash
-git clone https://github.com/cmpxchg16/mcp-ethical-hacking.git
+git clone https://github.com/xXBarre/mcp-ethical-hacking.git
 cd mcp-ethical-hacking/src
 ```
 
