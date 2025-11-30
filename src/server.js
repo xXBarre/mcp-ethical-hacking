@@ -26,15 +26,64 @@ if (process.env.NOTION_API_KEY) {
 }
 
 async function runShell(command, args = [], opts = {}) {
-  const { cwd, timeout = 60_000, env = {} } = opts;
-  const { stdout, stderr } = await execFileAsync(command, args, {
-    cwd,
-    timeout,
-    maxBuffer: 10 * 1024 * 1024,
-    env: { ...process.env, ...env }
-  });
-  return { stdout, stderr };
+  const isWin = process.platform === "win32";
+
+  // Si estamos en Windows, ejecutar comandos a través de cmd.exe
+  if (isWin) {
+    const fullCmd = ["/c", command, ...(args || [])];
+    return runShellWindows(fullCmd, opts);
+  }
+
+  // Si estamos en Linux/macOS -> normal
+  return runShellUnix(command, args, opts);
 }
+
+import { exec } from "node:child_process";
+
+async function runShellUnix(command, args = [], opts = {}) {
+  const { cwd, timeout = 60_000, env = {} } = opts;
+
+  return new Promise((resolve, reject) => {
+    // Comando completo, incluyendo pipes
+    const full = [command, ...args].join(" ");
+
+    exec(full, {
+      cwd,
+      timeout,
+      maxBuffer: 10 * 1024 * 1024,
+      env: { ...process.env, ...env },
+      shell: "/bin/bash"    // 🔥 aquí está la magia
+    }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ stdout: "", stderr: error.message || stderr });
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+
+async function runShellWindows(cmdArray, opts = {}) {
+  const { cwd, timeout = 60_000 } = opts;
+  const full = ["cmd.exe", ...cmdArray].join(" ");
+
+  return new Promise((resolve) => {
+    exec(full, {
+      cwd,
+      timeout,
+      maxBuffer: 10 * 1024 * 1024,
+      windowsHide: true
+    }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ stdout: "", stderr: error.message || stderr });
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
 
 function text(value) {
   return { type: "text", text: value };
@@ -135,12 +184,29 @@ async function handleRunCommand(args) {
   const { command, cwd, timeoutMs = 60_000 } = args;
   const cmdArgs = Array.isArray(args.args) ? args.args : [];
 
-  const { stdout, stderr } = await runShell(command, cmdArgs, { cwd, timeout: timeoutMs });
-  const content = [];
-  if (stdout) content.push(text(stdout));
-  if (stderr) content.push(text(`[stderr]\n${stderr}`));
-  return { content };
+  try {
+    const { stdout, stderr } = await runShell(command, cmdArgs, {
+      cwd,
+      timeout: timeoutMs
+    });
+
+    const content = [];
+    if (stdout) content.push({ type: "text", text: stdout });
+    if (stderr) content.push({ type: "text", text: `[stderr]\n${stderr}` });
+
+    return { content };
+  } catch (err) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error ejecutando comando: ${err.message}`
+        }
+      ]
+    };
+  }
 }
+
 
 async function handleSearchCommand(args) {
   const query = String(args.query ?? "").trim();
@@ -325,9 +391,23 @@ async function handleNotionQueryDatabase(args) {
 
 async function processRequest(request) {
   const { jsonrpc, id, method, params } = request;
+  // Soportar métodos como string o como objeto { name: "..." } que algunos clientes envían.
+  const rawMethod =
+    typeof method === "string"
+      ? method
+      : method && typeof method === "object"
+        ? typeof method.name === "string"
+          ? method.name
+          : typeof method.method === "string"
+            ? method.method
+            : typeof method.type === "string"
+              ? method.type
+              : ""
+        : "";
+  const methodName = rawMethod.trim();
 
   try {
-    if (method === "initialize") {
+    if (methodName === "initialize") {
       return {
         jsonrpc,
         id,
@@ -342,7 +422,7 @@ async function processRequest(request) {
       };
     }
 
-    if (method === "tools/list") {
+    if (methodName === "tools/list") {
       return {
         jsonrpc,
         id,
@@ -350,7 +430,7 @@ async function processRequest(request) {
       };
     }
 
-    if (method === "tools/call") {
+    if (methodName === "tools/call") {
       const { name, arguments: args } = params || {};
 
       let result;
@@ -387,12 +467,60 @@ async function processRequest(request) {
       };
     }
 
+    // ================================
+    // MCP STUBS PARA HANDLERS OPCIONALES
+    // ================================
+    if (
+      methodName === "setToolsProvider" ||
+      methodName === "tools/setToolsProvider" ||
+      methodName.toLowerCase().includes("settoolsprovider")
+    ) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { status: "ok" }
+      };
+    }
+
+    if (
+      methodName === "tools/execute" ||
+      methodName === "tool/execute" ||
+      methodName === "execute" ||
+      methodName.toLowerCase().includes("execute")
+    ) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { status: "noop" }
+      };
+    }
+
+    if (
+      methodName === "model/generate" ||
+      methodName === "models/generate" ||
+      methodName === "generate" ||
+      methodName.toLowerCase().includes("generate")
+    ) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: { status: "noop" }
+      };
+    }
+
+    // Notificaciones de LM Studio: ignorar pero responder ok/noop
+    if (methodName.startsWith("notifications/")) {
+      return { jsonrpc: "2.0", id, result: { status: "ok" } };
+    }
+
+    console.error(`[RPC UNKNOWN] method='${rawMethod}' parsed='${methodName}' request=${JSON.stringify(request)}`);
     return {
       jsonrpc,
       id,
       error: { code: -32601, message: "Method not found" }
     };
   } catch (error) {
+    console.error(`[RPC ERROR] method='${method}' parsed='${methodName}' error=${error.message}`);
     return {
       jsonrpc,
       id,
@@ -463,7 +591,7 @@ Información del Servidor:
 Herramientas Disponibles (7):
    1. run_command           - Ejecutar comandos shell
    2. search_command        - Buscar comandos y herramientas
-   3. install_package       - Instalar paquetes
+   3. install_package       - Instalar paquetes (apt-get)
    4. launch_gui_tool       - Lanzar aplicaciones GUI
    5. check_gui_tool        - Verificar herramientas disponibles
    6. notion_create_page    - Crear páginas en Notion
@@ -495,7 +623,8 @@ function startStdioRpc() {
     try {
       requestCount++;
       const request = JSON.parse(line);
-      const response = await processRequest(request);
+      // Usa handleRpc para normalizar alias de métodos antes de procesar.
+      const response = await handleRpc(request);
 
       if (response.result) {
         console.error(`[STDIN #${requestCount}] OK - ${request.method || "unknown"}`);
