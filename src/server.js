@@ -463,7 +463,7 @@ Información del Servidor:
 Herramientas Disponibles (7):
    1. run_command           - Ejecutar comandos shell
    2. search_command        - Buscar comandos y herramientas
-   3. install_package       - Instalar paquetes (apt-get)
+   3. install_package       - Instalar paquetes
    4. launch_gui_tool       - Lanzar aplicaciones GUI
    5. check_gui_tool        - Verificar herramientas disponibles
    6. notion_create_page    - Crear páginas en Notion

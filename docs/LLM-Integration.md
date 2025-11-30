@@ -260,85 +260,56 @@ chmod +x cli.js
 ./cli.js install_package --package curl
 ```
 
-## Servidor Web HTTP
+## Servidor HTTP/SSE/WS integrado
 
-Exponer el servidor MCP como API REST.
+El servidor unificado (`src/server.js`) expone REST + SSE + WebSocket sin procesos adicionales.
 
-### Requisitos
-
-- Node.js 18+
-- Express (o framework similar)
-- npm
-
-### Servidor HTTP (http-server.js)
-
-```javascript
-const express = require('express');
-const { spawn } = require('child_process');
-const app = express();
-
-app.use(express.json());
-
-app.post('/api/execute', (req, res) => {
-  const { command, args, cwd, timeoutMs } = req.body;
-
-  const mcp = spawn('npm', ['start'], {
-    cwd: process.cwd()
-  });
-
-  let output = '';
-  let error = '';
-
-  mcp.stdout.on('data', (data) => {
-    output += data.toString();
-  });
-
-  mcp.stderr.on('data', (data) => {
-    error += data.toString();
-  });
-
-  const request = JSON.stringify({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/call',
-    params: {
-      name: 'run_command',
-      arguments: { command, args, cwd, timeoutMs }
-    }
-  }) + '\n';
-
-  mcp.stdin.write(request);
-  mcp.stdin.end();
-
-  mcp.on('close', (code) => {
-    try {
-      const result = JSON.parse(output);
-      res.json(result);
-    } catch (e) {
-      res.status(500).json({ error: output || error });
-    }
-  });
-});
-
-app.listen(3001, () => {
-  console.log('MCP HTTP Server en puerto 3001');
-});
-```
-
-### Uso HTTP
+### Iniciar
 
 ```bash
-node http-server.js
+cd mcp-ethical-hacking/src
+npm start   # o npm run dev
+```
 
-# En otra terminal
-curl -X POST http://localhost:3001/api/execute \
+### Endpoints
+
+- `GET /`           → Info del servidor y herramientas
+- `GET /health`     → Estado y uptime
+- `GET /tools`      → Lista de herramientas
+- `POST /call`      → Ejecutar herramienta (JSON-RPC compatible)
+- `POST /execute`   → Alias de `/call`
+- `GET /sse`        → Stream SSE (soporta JSONL si se pide `format=jsonl` o header `application/jsonl+model-context-stream`)
+- `WS /ws`          → WebSocket MCP
+
+### Ejemplo REST
+
+```bash
+curl -X POST http://localhost:3000/call \
   -H "Content-Type: application/json" \
   -d '{
-    "command": "nmap",
-    "args": ["-sV", "127.0.0.1"],
-    "timeoutMs": 60000
+    "method": "tools/call",
+    "params": {
+      "name": "run_command",
+      "arguments": { "command": "whoami" }
+    },
+    "id": 1,
+    "jsonrpc": "2.0"
   }'
 ```
+
+### Ejemplo WebSocket
+
+Conectar a `ws://localhost:3000/ws` y enviar:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run_command","arguments":{"command":"uname","args":["-a"]}}}
+```
+
+### Ejemplo SSE / JSONL
+
+- SSE: `curl -N http://localhost:3000/sse`
+- JSONL stream: `curl -N -H "Accept: application/jsonl+model-context-stream" http://localhost:3000/sse?format=jsonl`
 
 ## Configuración de Variables de Entorno
 
