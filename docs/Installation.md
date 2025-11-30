@@ -23,7 +23,7 @@ npm --version    # Debe ser 8.0.0 o superior
 
 ```bash
 git clone https://github.com/cmpxchg16/mcp-ethical-hacking.git
-cd mcp-ethical-hacking
+cd mcp-ethical-hacking/src
 ```
 
 ## Paso 2: Instalar Dependencias
@@ -68,13 +68,13 @@ Para obtener tu NOTION_API_KEY:
 ### Modo Desarrollo
 
 ```bash
-npm run dev
+npm run dev   # desde /src
 ```
 
 ### Modo Producción
 
 ```bash
-npm start
+npm start     # desde /src
 ```
 
 El servidor se iniciará y mostrará:
@@ -142,18 +142,18 @@ Para desarrollo local con recargas automáticas, instala nodemon:
 npm install --save-dev nodemon
 ```
 
-Luego agrega a package.json:
+Luego agrega a `src/package.json`:
 
 ```json
 "scripts": {
-  "dev-watch": "nodemon --exec node src/server.js"
+  "dev-watch": "nodemon --exec node server.js"
 }
 ```
 
 Ejecuta con:
 
 ```bash
-npm run dev-watch
+npm run dev-watch   # desde /src
 ```
 
 ## Problemas Comunes

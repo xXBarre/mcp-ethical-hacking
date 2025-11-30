@@ -1,0 +1,24 @@
+{
+  "name": "mcp-ethical-hacking",
+  "version": "0.2.0",
+  "description": "MCP server para automatizar flujos de bug bounty y CTF. Ejecuta comandos, instala paquetes, lanza herramientas GUI (Burp, ZAP) e integra con Notion.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "http": "node server.js",
+    "http:dev": "NODE_ENV=development node server.js",
+    "bridge": "node server.js",
+    "bridge:dev": "NODE_ENV=development node server.js",
+    "http-mcp": "node server.js",
+    "http-mcp:dev": "NODE_ENV=development node server.js",
+    "ws": "node server.js",
+    "ws:dev": "NODE_ENV=development node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.7.0",
+    "@notionhq/client": "^3.0.0",
+    "ws": "^8.18.3"
+  }
+}

@@ -84,7 +84,7 @@ Orquestar pipelines completos de auditoría con múltiples pasos, agregación de
 ```bash
 # Clonar repositorio
 git clone https://github.com/xXBarre/mcp-ethical-hacking.git
-cd mcp-ethical-hacking
+cd mcp-ethical-hacking/src
 
 # Instalar dependencias
 npm install

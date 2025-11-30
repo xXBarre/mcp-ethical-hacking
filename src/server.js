@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 
 import { execFile, spawn } from "node:child_process";
+import http from "node:http";
+import os from "node:os";
 import { promisify } from "node:util";
 import readline from "node:readline";
 import process from "node:process";
+import { WebSocketServer } from "ws";
 
 const execFileAsync = promisify(execFile);
+const HTTP_PORT = Number(process.env.PORT) || 3000;
+const HTTP_HOST = process.env.HOST || "0.0.0.0";
+const SERVER_NAME = "mcp-ethical-hacking";
+const SERVER_VERSION = "0.2.0";
 
 // Inicializar cliente de Notion si existe token
 let notionClient = null;
@@ -328,8 +335,8 @@ async function processRequest(request) {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {} },
           serverInfo: {
-            name: "mcp-ethical-hacking",
-            version: "0.2.0"
+            name: SERVER_NAME,
+            version: SERVER_VERSION
           }
         }
       };
@@ -344,7 +351,7 @@ async function processRequest(request) {
     }
 
     if (method === "tools/call") {
-      const { name, arguments: args } = params;
+      const { name, arguments: args } = params || {};
 
       let result;
       switch (name) {
@@ -394,24 +401,64 @@ async function processRequest(request) {
   }
 }
 
-async function main() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
+function normalizeRpcRequest(payload) {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Request inválido");
+  }
 
-  // Banner de inicio
+  if (payload.jsonrpc) {
+    return payload;
+  }
+
+  const id = payload.id ?? Math.random().toString(36).slice(2);
+
+  if (payload.method === "resources/list_tools") {
+    return { jsonrpc: "2.0", id, method: "tools/list", params: {} };
+  }
+
+  if (payload.method && payload.params !== undefined) {
+    return { jsonrpc: "2.0", id, method: payload.method, params: payload.params };
+  }
+
+  if (payload.method === "call_tool" || payload.action === "call_tool") {
+    return {
+      jsonrpc: "2.0",
+      id,
+      method: "tools/call",
+      params: {
+        name: payload.params?.name || payload.name,
+        arguments: payload.params?.arguments || payload.arguments || {}
+      }
+    };
+  }
+
+  if (payload.name) {
+    return {
+      jsonrpc: "2.0",
+      id,
+      method: "tools/call",
+      params: { name: payload.name, arguments: payload.arguments || payload.params || {} }
+    };
+  }
+
+  throw new Error("Formato de request no soportado");
+}
+
+async function handleRpc(payload) {
+  const rpcRequest = normalizeRpcRequest(payload);
+  return processRequest(rpcRequest);
+}
+
+function logIntro() {
   console.error(`
 ╔════════════════════════════════════════════════════════════════╗
-║       MCP ETHICAL HACKING SERVER - INICIADO                   ║
+║       MCP ETHICAL HACKING SERVER - INICIADO                    ║
 ╚════════════════════════════════════════════════════════════════╝
 
 Información del Servidor:
-   • Protocolo: JSON-RPC 2.0
-   • Entrada: stdin
-   • Salida: stdout
-   • Status: ESCUCHANDO
+   • Protocolo: JSON-RPC 2.0 (stdin/stdout), HTTP, SSE y WebSocket
+   • Entrada: stdin / HTTP / WS
+   • Salida: stdout / HTTP / WS
 
 Herramientas Disponibles (7):
    1. run_command           - Ejecutar comandos shell
@@ -422,56 +469,305 @@ Herramientas Disponibles (7):
    6. notion_create_page    - Crear páginas en Notion
    7. notion_query_database - Consultar bases de datos Notion
 
-Integración HTTP Bridge:
-   • URL: http://localhost:3000
-   • Command: npm run http
+HTTP/WS:
+   • URL base: http://${HTTP_HOST === "0.0.0.0" ? "0.0.0.0" : HTTP_HOST}:${HTTP_PORT}
+   • Endpoints: /, /health, /tools, /call, /execute, /sse, /ws
 
-Conexión: ${process.env.NOTION_API_KEY ? 'NOTION CONECTADO' : 'NOTION NO CONFIGURADO (opcional)'}
-
+Conexión: ${process.env.NOTION_API_KEY ? "NOTION CONECTADO" : "NOTION NO CONFIGURADO (opcional)"}
 ════════════════════════════════════════════════════════════════
-  Servidor listo. Esperando solicitudes JSON-RPC...
+  Servidor listo. Esperando solicitudes...
 ════════════════════════════════════════════════════════════════
 `);
+}
+
+function startStdioRpc() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+  });
 
   let requestCount = 0;
 
-  for await (const line of rl) {
+  rl.on("line", async (line) => {
+    if (!line.trim()) return;
+
     try {
       requestCount++;
       const request = JSON.parse(line);
-      
-      // Log de request entrante
-      const methodName = request.method || 'unknown';
-      console.error(`\n[REQUEST #${requestCount}] ${new Date().toISOString()}`);
-      console.error(`  Method: ${methodName}`);
-      if (request.params) {
-        console.error(`  Params: ${JSON.stringify(request.params).substring(0, 100)}${JSON.stringify(request.params).length > 100 ? '...' : ''}`);
-      }
-
       const response = await processRequest(request);
-      
-      // Log de response
+
       if (response.result) {
-        console.error(`  EXITOSO`);
-        if (typeof response.result === 'string' && response.result.length > 100) {
-          console.error(`  Output: ${response.result.substring(0, 100)}...`);
-        } else if (typeof response.result === 'object') {
-          console.error(`  Output: ${JSON.stringify(response.result).substring(0, 100)}...`);
-        }
-      } else if (response.error) {
-        console.error(`  ERROR: ${response.error.message}`);
+        console.error(`[STDIN #${requestCount}] OK - ${request.method || "unknown"}`);
+      } else {
+        console.error(`[STDIN #${requestCount}] ERROR - ${response.error?.message}`);
       }
 
       console.log(JSON.stringify(response));
     } catch (error) {
-      console.error(`\n[ERROR] ${error.message}`);
-      console.log(JSON.stringify({
-        jsonrpc: '2.0',
-        id: null,
-        error: { code: -32603, message: error.message }
-      }));
+      console.error(`[STDIN] ERROR: ${error.message}`);
+      console.log(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32603, message: error.message }
+        })
+      );
     }
+  });
+}
+
+function sendJsonlHandshake(res) {
+  const sendJSON = (obj) => res.write(JSON.stringify(obj) + "\n");
+  sendJSON({
+    type: "model",
+    protocol_version: "2024-11-05",
+    server_info: {
+      name: SERVER_NAME,
+      version: SERVER_VERSION
+    }
+  });
+  sendJSON({ type: "tools/list", tools });
+  const ping = setInterval(() => sendJSON({ type: "ping" }), 15000);
+  res.on("close", () => clearInterval(ping));
+}
+
+function setupSse(res) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+    "X-Accel-Buffering": "no"
+  });
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  sendEvent("ready", { status: "ready", tools: tools.length });
+  sendEvent("tools", tools);
+
+  const heartbeat = setInterval(() => {
+    res.write(": heartbeat\n\n");
+  }, 25000);
+
+  res.on("close", () => clearInterval(heartbeat));
+}
+
+async function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk.toString()));
+    req.on("end", () => {
+      try {
+        const parsed = data ? JSON.parse(data) : {};
+        resolve(parsed);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function createHttpServer() {
+  return http.createServer(async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    if (req.method === "GET" && req.url && req.url.startsWith("/sse")) {
+      const wantsJsonl =
+        req.url.includes("format=jsonl") ||
+        (req.headers.accept || "").includes("application/jsonl+model-context-stream");
+
+      if (wantsJsonl) {
+        res.writeHead(200, {
+          "Content-Type": "application/jsonl+model-context-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive"
+        });
+        sendJsonlHandshake(res);
+      } else {
+        setupSse(res);
+      }
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify(
+          {
+            server: SERVER_NAME,
+            version: SERVER_VERSION,
+            protocol: "MCP JSON-RPC 2.0",
+            endpoints: {
+              "/": "Info",
+              "/health": "Estado",
+              "/tools": "Lista de herramientas",
+              "/call": "Ejecutar herramienta (JSON-RPC compatible)",
+              "/execute": "Alias de /call",
+              "/sse": "Handshake SSE/JSONL",
+              "/ws": "WebSocket MCP"
+            },
+            tools: tools.map((t) => ({ name: t.name, description: t.description }))
+          },
+          null,
+          2
+        )
+      );
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/tools") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ tools }, null, 2));
+      return;
+    }
+
+    if (req.method === "POST" && (req.url === "/call" || req.url === "/execute")) {
+      try {
+        const body = await readJsonBody(req);
+
+        const rpcPayload = body.jsonrpc
+          ? body
+          : body.method || body.name
+            ? {
+                jsonrpc: "2.0",
+                id: body.id ?? Math.random().toString(36).slice(2),
+                method:
+                  body.method === "initialize" || body.method === "tools/list" || body.method === "tools/call"
+                    ? body.method
+                    : "tools/call",
+                params:
+                  body.method === "initialize" || body.method === "tools/list"
+                    ? body.params || {}
+                    : { name: body.name || body.method, arguments: body.arguments || body.params || {} }
+              }
+            : null;
+
+        if (!rpcPayload) {
+          throw new Error("Formato de request no soportado");
+        }
+
+        const response = await handleRpc(rpcPayload);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(response, null, 2));
+      } catch (error) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: error.message }));
+      }
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/ws") {
+      res.writeHead(426, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Usa WebSocket en ws://<host>/ws" }));
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not Found" }));
+  });
+}
+
+function attachWebSocket(server) {
+  const wss = new WebSocketServer({ server });
+
+  wss.on("connection", (ws) => {
+    const clientId = Math.random().toString(36).slice(2);
+    console.error(`[WS] Cliente conectado: ${clientId}`);
+
+    ws.send(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "tools/list",
+        params: { tools }
+      })
+    );
+
+    ws.on("message", async (data) => {
+      try {
+        const payload = JSON.parse(data);
+        const response = await handleRpc(payload);
+        ws.send(JSON.stringify(response));
+      } catch (error) {
+        ws.send(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: null,
+            error: { code: -32700, message: error.message }
+          })
+        );
+      }
+    });
+
+    ws.on("close", () => {
+      console.error(`[WS] Cliente desconectado: ${clientId}`);
+    });
+
+    ws.on("error", (error) => {
+      console.error(`[WS] Error: ${error.message}`);
+    });
+  });
+
+  return wss;
+}
+
+function logHttpAddresses() {
+  const interfaces = os.networkInterfaces();
+  const hosts = new Set(["127.0.0.1"]);
+  Object.values(interfaces)
+    .flat()
+    .filter(Boolean)
+    .forEach((addr) => {
+      if (addr.family === "IPv4" && !addr.internal) {
+        hosts.add(addr.address);
+      }
+    });
+
+  console.error(`HTTP/WS escuchando en:`);
+  Array.from(hosts).forEach((ip) => {
+    console.error(`  http://${ip}:${HTTP_PORT}`);
+  });
+}
+
+async function main() {
+  logIntro();
+
+  // RPC via stdin/stdout
+  if (process.env.DISABLE_STDIN !== "1") {
+    startStdioRpc();
   }
+
+  // HTTP + WebSocket en un mismo servidor
+  const server = createHttpServer();
+  attachWebSocket(server);
+
+  server.listen(HTTP_PORT, HTTP_HOST, () => {
+    console.error(`Servidor HTTP/SSE/WS listo en ${HTTP_HOST}:${HTTP_PORT}`);
+    logHttpAddresses();
+  });
+
+  process.on("SIGINT", () => {
+    console.error("\nCerrando servidor...");
+    server.close(() => process.exit(0));
+  });
 }
 
 main().catch((err) => {

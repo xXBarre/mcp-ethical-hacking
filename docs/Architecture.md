@@ -125,11 +125,12 @@ Servidor responde:
 
 ```
 mcp-ethical-hacking/
-├── src/
-│   └── server.js          # Servidor principal
-├── package.json           # Dependencias
-├── README.md             # Documentación
-└── EXAMPLES.md           # Ejemplos JSON-RPC
+├── docs/                 # Toda la documentación (.md)
+└── src/
+    ├── package.json      # Dependencias y scripts
+    ├── package-lock.json # Versionado de deps
+    ├── server.js         # Servidor MCP unificado
+    └── node_modules/     # (tras npm install)
 ```
 
 ### Módulos Principales
